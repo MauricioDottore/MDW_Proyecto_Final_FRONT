@@ -1,21 +1,35 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
+import { signInStart, signInSuccess, signInFailure } from '../redux/user/userSlice';
 
 export default function SignIn() {
-  const [formData, setFormData] = useState({});
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const [formData, setFormData] = useState({ email: '', password: '' });
+  
+  // Extraemos el estado global de Redux. 
+  // 'state.user' viene del nombre que pusiste en el reducer de store.js
+  const { loading, error } = useSelector((state) => state.user);
+  
+  const dispatch = useDispatch();
   const navigate = useNavigate();
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.id]: e.target.value });
+    setFormData({ 
+      ...formData, 
+      [e.target.id]: e.target.value.trim() // trim() evita espacios accidentales
+    });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Validación básica antes de disparar Redux
+    if (!formData.email || !formData.password) {
+      return dispatch(signInFailure("Por favor, completa todos los campos."));
+    }
+
     try {
-      setLoading(true);
-      setError(null);
+      dispatch(signInStart());
       
       const res = await fetch('/api/auth/signin', {
         method: 'POST',
@@ -25,18 +39,19 @@ export default function SignIn() {
       
       const data = await res.json();
       
+      // Si el backend responde con un error estructurado
       if (data.success === false) {
-        setLoading(false);
-        setError(data.message);
+        dispatch(signInFailure(data.message));
         return;
       }
       
-      setLoading(false);
-      // Aquí guardarías el token JWT (puedes usar Redux después)
-      navigate('/'); // Redirección al Home tras éxito
+      // Éxito: Guardamos el usuario en Redux y navegamos
+      dispatch(signInSuccess(data));
+      navigate('/'); 
+      
     } catch (err) {
-      setLoading(false);
-      setError("Ocurrió un error al conectar con el servidor.");
+      // Error de red o servidor caído
+      dispatch(signInFailure("Error de conexión con el servidor."));
     }
   };
 
@@ -75,7 +90,12 @@ export default function SignIn() {
               />
             </div>
 
-            {error && <p className="text-red-500 text-sm font-semibold ml-2">⚠️ {error}</p>}
+            {/* Mostramos el error que viene directamente de Redux */}
+            {error && (
+              <p className="text-red-500 text-sm font-semibold ml-2 animate-bounce">
+                ⚠️ {error}
+              </p>
+            )}
 
             <button
               disabled={loading}
@@ -97,7 +117,6 @@ export default function SignIn() {
 
         {/* Lado Derecho: Visual/Decorativo */}
         <div className="hidden md:flex md:w-1/2 bg-slate-900 relative items-center justify-center p-12 overflow-hidden">
-          {/* Círculo decorativo de fondo */}
           <div className="absolute w-80 h-80 bg-indigo-600/20 rounded-full blur-3xl"></div>
           
           <div className="relative z-10 text-center">
@@ -108,7 +127,6 @@ export default function SignIn() {
             </p>
           </div>
           
-          {/* Decoración inferior */}
           <div className="absolute bottom-0 left-0 right-0 p-6 bg-indigo-600 text-white text-center text-xs font-bold tracking-widest uppercase">
             Autenticación segura vía JWT
           </div>
