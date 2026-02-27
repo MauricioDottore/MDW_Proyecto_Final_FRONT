@@ -2,18 +2,21 @@ import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { AiOutlineSearch, AiOutlineMenu, AiOutlineClose } from "react-icons/ai";
 import { FaMoon } from "react-icons/fa";
+import { useSelector } from "react-redux";
+import { Avatar, Dropdown, Tooltip, Button, TextInput } from "flowbite-react";
 
 export default function Header() {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
   const path = location.pathname;
+  // Obtenemos el usuario actual desde el estado global de Redux
+  const user = useSelector((state) => state.user.currentUser);
 
   return (
     <nav className="bg-white/80 backdrop-blur-md border-b border-gray-100 py-3 px-4 sm:px-6 sticky top-0 z-50 w-full">
-      {/* Contenedor Principal: Sin max-width para que llegue a los bordes */}
       <div className="flex justify-between items-center w-full">
         
-        {/* PARTE 1: Lado Izquierdo (Pegado a la izquierda) */}
+        {/* PARTE 1: Lado Izquierdo - Logo */}
         <div className="flex-1 flex justify-start">
           <Link to="/" className="flex items-center group z-50">
             <span className="text-2xl font-extrabold tracking-tight">
@@ -24,7 +27,7 @@ export default function Header() {
           </Link>
         </div>
 
-        {/* PARTE 2: Centro (Perfectamente centrado) */}
+        {/* PARTE 2: Centro - Navegación de escritorio */}
         <div className="hidden md:flex items-center gap-1 shrink-0">
           {[
             { name: "Home", href: "/" },
@@ -46,8 +49,9 @@ export default function Header() {
           ))}
         </div>
 
-        {/* PARTE 3: Derecha (Pegado a la derecha) */}
+        {/* PARTE 3: Derecha - Buscador, Modo Oscuro y Usuario */}
         <div className="flex-1 flex items-center justify-end gap-3 sm:gap-4">
+          
           {/* Buscador */}
           <div className="hidden lg:flex items-center bg-gray-50 border border-gray-100 px-3 py-1.5 rounded-full group focus-within:border-indigo-200 transition-all">
             <AiOutlineSearch className="text-gray-400 group-focus-within:text-indigo-500 transition-colors" />
@@ -58,18 +62,53 @@ export default function Header() {
             />
           </div>
 
+          {/* Botón Modo Oscuro */}
           <button className="p-2 rounded-full group transition-all duration-300 hover:bg-slate-100">
             <FaMoon className="text-lg text-slate-500 transition-all duration-500 group-hover:rotate-[360deg] group-hover:text-yellow-400" />
           </button>
 
-          <Link 
-            to="/sign-in" 
-            className="hidden md:inline-block relative px-8 py-2.5 text-sm font-bold text-white transition-all duration-700 rounded-full bg-gradient-to-r from-indigo-600 via-purple-500 to-pink-500 bg-[length:200%_auto] hover:bg-[right_center] shadow-md hover:shadow-indigo-200 active:scale-95"
-          >
-            Sign In
-          </Link>
+          {/* Lógica Condicional del Usuario */}
+          {user ? (
+            <Dropdown
+              arrowIcon={false}
+              inline
+              label={
+                <Tooltip 
+                  content={`@${user.username} - ${user.email}`} 
+                  placement="bottom"
+                >
+                  <Avatar 
+                    alt="user" 
+                    img={user.profilePicture} 
+                    rounded   
+                  />
+                  
+                  
+                </Tooltip>
+              }
+            >
+              <Dropdown.Header>
+                <span className="block text-sm font-bold truncate">@{user.username}</span>
+                <span className="block text-sm font-medium truncate text-gray-500">{user.email}</span>
+              </Dropdown.Header>
+              <Link to={'/dashboard?tab=profile'}>
+                <Dropdown.Item>Perfil</Dropdown.Item>
+              </Link>
+              <Dropdown.Divider />
+              <Dropdown.Item className="text-red-500 font-semibold">
+                Cerrar Sesión
+              </Dropdown.Item>
+            </Dropdown>
+          ) : (
+            <Link 
+              to="/sign-in" 
+              className="hidden md:inline-block relative px-8 py-2.5 text-sm font-bold text-white transition-all duration-700 rounded-full bg-gradient-to-r from-indigo-600 via-purple-500 to-pink-500 bg-[length:200%_auto] hover:bg-[right_center] shadow-md hover:shadow-indigo-200 active:scale-95"
+            >
+              Sign In
+            </Link>
+          )}
 
-          {/* Toggle Menú Móvil */}
+          {/* Botón Menú Móvil */}
           <button 
             onClick={() => setIsOpen(!isOpen)}
             className="md:hidden p-2 rounded-lg text-slate-600 hover:bg-slate-100 transition-all z-50"
@@ -79,13 +118,13 @@ export default function Header() {
         </div>
       </div>
 
-      {/* Menú Desplegable Móvil (Sin cambios en lógica, solo visual) */}
+      {/* Menú Desplegable Móvil */}
       <div className={`md:hidden absolute top-0 left-0 w-full bg-white border-b shadow-xl transition-all duration-500 ease-in-out transform ${isOpen ? "translate-y-0 opacity-100" : "-translate-y-full opacity-0 pointer-events-none"}`}>
         <div className="pt-20 pb-8 px-6 flex flex-col gap-4">
           {[
             { name: "Home", href: "/" },
             { name: "About", href: "/about" },
-            { name: "Projects", href: "/projects" }
+            { name: "Products", href: "/projects" }
           ].map((link) => (
             <Link 
               key={link.name}
@@ -99,13 +138,17 @@ export default function Header() {
             </Link>
           ))}
           <hr className="border-gray-100" />
-          <Link 
-            to="/sign-in" 
-            onClick={() => setIsOpen(false)}
-            className="w-full text-center py-4 text-white font-bold rounded-2xl bg-gradient-to-r from-indigo-600 to-purple-500 shadow-lg shadow-indigo-100"
-          >
-            Sign In
-          </Link>
+          
+          {user ? (
+             <Link to="/dashboard?tab=profile" onClick={() => setIsOpen(false)} className="flex items-center gap-3 p-3 bg-indigo-50 rounded-xl">
+                <img src={user.profilePicture} alt="user" className="w-10 h-10 rounded-full object-cover" />
+                <span className="font-bold text-indigo-700">{user.username}</span>
+             </Link>
+          ) : (
+            <Link to="/sign-in" onClick={() => setIsOpen(false)} className="w-full text-center py-4 text-white font-bold rounded-2xl bg-gradient-to-r from-indigo-600 to-purple-500">
+              Sign In
+            </Link>
+          )}
         </div>
       </div>
     </nav>
