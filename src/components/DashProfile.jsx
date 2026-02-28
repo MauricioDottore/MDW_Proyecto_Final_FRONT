@@ -176,7 +176,7 @@ export default function DashProfile() {
       </form>
 
 {currentUser.isAdmin && (
-  <Link to='/createPost' className='block mt-10'>
+  <Link to='/CreatePost' className='block mt-10'>
     <button
       type='button'
       className='w-full mt-10 relative group overflow-hidden rounded-2xl py-4 transition-all duration-300 shadow-lg hover:shadow-2xl active:scale-[0.98]'
