@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { AiOutlineMenu, AiOutlineClose } from "react-icons/ai";
-import { FaMoon, FaUser } from "react-icons/fa";
+import { FaMoon } from "react-icons/fa";
 import { useSelector, useDispatch } from "react-redux";
-import { Avatar, Dropdown } from "flowbite-react";
-// Importa tu acción de logout real aquí para que funcione
-// import { signOutSuccess } from "../redux/user/userSlice";
+import { Dropdown } from "flowbite-react";
+// Importamos exactamente como lo tienes en tu slice
+import { signoutSuccess } from "../redux/user/userSlice";
 
 export default function Header() {
   const [isOpen, setIsOpen] = useState(false);
@@ -14,22 +14,27 @@ export default function Header() {
   const dispatch = useDispatch();
   const path = location.pathname;
 
-  // Obtenemos el usuario del estado global de Redux
+  // Acceso seguro al estado global
   const { currentUser } = useSelector((state) => state.user || {});
+
+  // Lógica para el círculo de color personalizado
+  // Usamos el encadenamiento opcional (?.) para evitar errores si currentUser es null
+  const initial = currentUser?.username ? currentUser.username.charAt(0).toUpperCase() : '?';
+  const userColor = currentUser?.profileColor || '#4f46e5';
 
   const handleSignOut = async () => {
     try {
-      // 1. Aquí puedes agregar la llamada a tu API de signout si la tienes
-      // await fetch('/api/user/signout', { method: 'POST' });
-      
-      // 2. Limpiamos el estado de Redux
-      // dispatch(signOutSuccess()); 
-      
-      // 3. Redirigimos al usuario
-      navigate('/sign-in');
-      console.log("Sesión cerrada correctamente");
+      const res = await fetch('/api/user/signout', { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) {
+        console.log(data.message);
+      } else {
+        // Disparamos la acción que tienes en tu slice
+        dispatch(signoutSuccess());
+        navigate('/sign-in');
+      }
     } catch (error) {
-      console.log(error.message);
+      console.log("Error al cerrar sesión:", error.message);
     }
   };
 
@@ -78,42 +83,46 @@ export default function Header() {
           </button>
 
           {currentUser ? (
-  <Dropdown
-    inline
-    label={<Avatar img={currentUser?.profilePicture} rounded />}
-  >
-    {/* REEMPLAZO: Usamos un div manual en lugar de <Dropdown.Header> */}
-    <div className="px-4 py-3 text-sm text-gray-900 border-b border-gray-100">
-      <span className="block font-bold">@{currentUser?.username}</span>
-      <span className="block truncate font-medium text-gray-500">{currentUser?.email}</span>
-    </div>
+            <Dropdown
+              inline
+              label={
+                /* EL CÍRCULO CON EL COLOR DEL USUARIO */
+                <div 
+                  style={{ backgroundColor: userColor }}
+                  className="w-10 h-10 rounded-full flex items-center justify-center shadow-md border-2 border-white cursor-pointer hover:scale-105 transition-transform"
+                >
+                  <span className="text-white font-black text-sm select-none">
+                    {initial}
+                  </span>
+                </div>
+              }
+            >
+              <div className="px-4 py-3 text-sm text-gray-900 border-b border-gray-100">
+                <span className="block font-bold truncate">@{currentUser?.username}</span>
+                <span className="block truncate font-medium text-gray-500">{currentUser?.email}</span>
+              </div>
 
-    {/* REEMPLAZO: Usamos un div con onClick en lugar de <Dropdown.Item> */}
-    <div 
-      className="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
-      onClick={() => navigate('/dashboard?tab=profile')}
-    >
-      Perfil
-    </div>
+              <div 
+                className="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer transition-colors"
+                onClick={() => navigate('/dashboard?tab=profile')}
+              >
+                Mi Perfil
+              </div>
 
-    <div className="h-px bg-gray-100 my-1"></div>
+              <div className="h-px bg-gray-100 my-1"></div>
 
-    <div 
-      className="px-4 py-2 text-sm text-red-600 font-semibold hover:bg-red-50 cursor-pointer"
-      onClick={() => {
-        // Aquí disparas tu cierre de sesión
-        console.log("Cerrando sesión...");
-        navigate('/sign-in');
-      }}
-    >
-      Cerrar Sesión
-    </div>
-  </Dropdown>
-) : (
-  <Link to="/sign-in" className="hidden md:inline-block px-8 py-2.5 text-sm font-bold text-white rounded-full bg-gradient-to-r from-indigo-600 via-purple-500 to-pink-500 hover:shadow-lg transition-all">
-    Sign In
-  </Link>
-)}
+              <div 
+                className="px-4 py-2 text-sm text-red-600 font-bold hover:bg-red-50 cursor-pointer transition-colors"
+                onClick={handleSignOut}
+              >
+                Cerrar Sesión
+              </div>
+            </Dropdown>
+          ) : (
+            <Link to="/sign-in" className="hidden md:inline-block px-8 py-2.5 text-sm font-bold text-white rounded-full bg-gradient-to-r from-indigo-600 via-purple-500 to-pink-500 hover:shadow-lg transition-all">
+              Sign In
+            </Link>
+          )}
 
           {/* MENÚ HAMBURGUESA MÓVIL */}
           <button 
@@ -133,7 +142,7 @@ export default function Header() {
               key={name}
               to={name === "Home" ? "/" : `/${name.toLowerCase()}`}
               onClick={() => setIsOpen(false)}
-              className="text-lg font-semibold p-3 rounded-xl hover:bg-indigo-50 text-slate-600"
+              className="text-lg font-semibold p-3 rounded-xl hover:bg-indigo-50 text-slate-600 text-center"
             >
               {name}
             </Link>
@@ -143,10 +152,15 @@ export default function Header() {
           {currentUser ? (
              <div 
                onClick={() => { navigate("/dashboard?tab=profile"); setIsOpen(false); }} 
-               className="flex items-center gap-3 p-3 bg-indigo-50 rounded-xl cursor-pointer"
+               className="flex items-center justify-center gap-3 p-4 bg-slate-50 rounded-2xl cursor-pointer hover:bg-indigo-50 transition-colors"
              >
-                <Avatar img={currentUser?.profilePicture} size="sm" rounded />
-                <span className="font-bold text-indigo-700">@{currentUser?.username}</span>
+                <div 
+                  style={{ backgroundColor: userColor }}
+                  className="w-10 h-10 rounded-full flex items-center justify-center shadow-md"
+                >
+                  <span className="text-white font-black text-sm">{initial}</span>
+                </div>
+                <span className="font-bold text-slate-800">@{currentUser?.username}</span>
              </div>
           ) : (
             <Link to="/sign-in" onClick={() => setIsOpen(false)} className="w-full text-center py-4 text-white font-bold rounded-2xl bg-gradient-to-r from-indigo-600 to-purple-500">
