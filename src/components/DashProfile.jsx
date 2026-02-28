@@ -2,6 +2,7 @@ import { Button, TextInput, Alert, Modal } from 'flowbite-react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useState } from 'react';
 import { HiOutlineLogout, HiOutlineTrash, HiCheck, HiOutlineExclamationCircle } from 'react-icons/hi';
+import { Link } from 'react-router-dom';
 import { 
   updateStart, updateSuccess, updateFailure,
   deleteUserStart, deleteUserSuccess, deleteUserFailure,
@@ -146,17 +147,67 @@ export default function DashProfile() {
           </div>
         </div>
 
-        <Button 
-          type='submit' 
-          disabled={loading || Object.keys(formData).length === 0} 
-          style={{ backgroundColor: currentColor }}
-          className='rounded-2xl enabled:hover:opacity-90 py-2.5 shadow-xl transition-all border-none'
-        >
-          <span className='font-black text-xs uppercase tracking-[0.2em] text-white'>
-            {loading ? 'Guardando...' : 'Guardar Cambios'}
+      <button 
+        type='submit' 
+        disabled={loading || Object.keys(formData).length === 0} 
+        className='w-full relative group overflow-hidden rounded-2xl py-3.5 transition-all duration-300 shadow-xl enabled:hover:shadow-2xl enabled:active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed border-none'
+        style={{ 
+          backgroundColor: loading || Object.keys(formData).length === 0 
+            ? '#cbd5e1' 
+            : currentColor 
+        }}
+      >
+        {/* EFECTO HOVER: Brillo blanco sutil que aparece al pasar el ratón */}
+        <div className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+        
+        <div className='flex items-center justify-center gap-3 relative z-10'>
+          {/* Icono de confirmación con fondo traslúcido */}
+          <div className="bg-black/10 p-1 rounded-lg backdrop-blur-sm">
+            <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+
+          <span className='font-black text-xs uppercase tracking-[0.25em] text-white'>
+            {loading ? 'Procesando...' : 'Guardar Cambios'}
           </span>
-        </Button>
+        </div>
+      </button> 
       </form>
+
+{currentUser.isAdmin && (
+  <Link to='/createPost' className='block mt-10'>
+    <button
+      type='button'
+      className='w-full mt-10 relative group overflow-hidden rounded-2xl py-4 transition-all duration-300 shadow-lg hover:shadow-2xl active:scale-[0.98]'
+      style={{
+        background: `linear-gradient(135deg, ${currentColor} 0%, #000000 100%)`,
+      }}
+    >
+      {/* Efecto de brillo al pasar el ratón */}
+      <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+      
+      <div className='flex items-center justify-center gap-3 relative z-10'>
+        {/* Icono más estilizado */}
+        <div className="bg-white/20 p-1.5 rounded-lg backdrop-blur-sm">
+          <svg 
+            className="w-5 h-5 text-white" 
+            fill="none" 
+            stroke="currentColor" 
+            viewBox="0 0 24 24"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M12 4v16m8-8H4" />
+          </svg>
+        </div>
+        
+        <span className="text-white font-black uppercase tracking-[0.25em] text-xs sm:text-sm">
+          Subir un producto
+        </span>
+      </div>
+    </button>
+  </Link>
+)}
 
       {updateUserSuccess && <Alert color='success' className='mt-5 rounded-2xl font-bold'>{updateUserSuccess}</Alert>}
       {error && <Alert color='failure' className='mt-5 rounded-2xl font-bold'>{error}</Alert>}
@@ -178,6 +229,8 @@ export default function DashProfile() {
           <HiOutlineLogout className='text-lg' /> Cerrar Sesión
         </button>
       </div>
+
+
 
       {/* MODAL ELIMINAR CUENTA */}
       <Modal show={showModal} onClose={() => setShowModal(false)} size='md' popup>

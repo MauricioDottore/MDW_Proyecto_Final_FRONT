@@ -4,7 +4,6 @@ import { AiOutlineMenu, AiOutlineClose } from "react-icons/ai";
 import { FaMoon } from "react-icons/fa";
 import { useSelector, useDispatch } from "react-redux";
 import { Dropdown } from "flowbite-react";
-// Importamos exactamente como lo tienes en tu slice
 import { signoutSuccess } from "../redux/user/userSlice";
 
 export default function Header() {
@@ -14,11 +13,8 @@ export default function Header() {
   const dispatch = useDispatch();
   const path = location.pathname;
 
-  // Acceso seguro al estado global
   const { currentUser } = useSelector((state) => state.user || {});
 
-  // Lógica para el círculo de color personalizado
-  // Usamos el encadenamiento opcional (?.) para evitar errores si currentUser es null
   const initial = currentUser?.username ? currentUser.username.charAt(0).toUpperCase() : '?';
   const userColor = currentUser?.profileColor || '#4f46e5';
 
@@ -29,7 +25,6 @@ export default function Header() {
       if (!res.ok) {
         console.log(data.message);
       } else {
-        // Disparamos la acción que tienes en tu slice
         dispatch(signoutSuccess());
         navigate('/sign-in');
       }
@@ -86,20 +81,38 @@ export default function Header() {
             <Dropdown
               inline
               label={
-                /* EL CÍRCULO CON EL COLOR DEL USUARIO */
-                <div 
-                  style={{ backgroundColor: userColor }}
-                  className="w-10 h-10 rounded-full flex items-center justify-center shadow-md border-2 border-white cursor-pointer hover:scale-105 transition-transform"
-                >
-                  <span className="text-white font-black text-sm select-none">
-                    {initial}
-                  </span>
+                /* AVATAR CON INDICADOR DE ADMIN */
+                <div className="relative group">
+                  <div 
+                    style={{ backgroundColor: userColor }}
+                    className={`w-10 h-10 rounded-full flex items-center justify-center shadow-md border-2 transition-all duration-300 cursor-pointer group-hover:scale-105 ${currentUser?.isAdmin ? 'border-cyan-400' : 'border-white'}`}
+                  >
+                    <span className="text-white font-black text-sm select-none">
+                      {initial}
+                    </span>
+                  </div>
+                  
+                  {/* PUNTO DE PULSO SOLO PARA ADMINS */}
+                  {currentUser?.isAdmin && (
+                    <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-3 w-3 bg-cyan-500"></span>
+                    </span>
+                  )}
                 </div>
               }
             >
               <div className="px-4 py-3 text-sm text-gray-900 border-b border-gray-100">
-                <span className="block font-bold truncate">@{currentUser?.username}</span>
-                <span className="block truncate font-medium text-gray-500">{currentUser?.email}</span>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="block font-bold truncate">@{currentUser?.username}</span>
+                  {/* BADGE DE ADMIN EN EL MENÚ */}
+                  {currentUser?.isAdmin && (
+                    <span className="bg-gradient-to-r from-cyan-500 to-blue-600 text-[9px] text-white font-black px-1.5 py-0.5 rounded shadow-sm uppercase tracking-tighter">
+                      Admin
+                    </span>
+                  )}
+                </div>
+                <span className="block truncate font-medium text-gray-500 text-xs">{currentUser?.email}</span>
               </div>
 
               <div 
@@ -154,13 +167,21 @@ export default function Header() {
                onClick={() => { navigate("/dashboard?tab=profile"); setIsOpen(false); }} 
                className="flex items-center justify-center gap-3 p-4 bg-slate-50 rounded-2xl cursor-pointer hover:bg-indigo-50 transition-colors"
              >
-                <div 
-                  style={{ backgroundColor: userColor }}
-                  className="w-10 h-10 rounded-full flex items-center justify-center shadow-md"
-                >
-                  <span className="text-white font-black text-sm">{initial}</span>
+                <div className="relative">
+                  <div 
+                    style={{ backgroundColor: userColor }}
+                    className={`w-10 h-10 rounded-full flex items-center justify-center shadow-md ${currentUser?.isAdmin ? 'border-2 border-cyan-400' : ''}`}
+                  >
+                    <span className="text-white font-black text-sm">{initial}</span>
+                  </div>
+                  {currentUser?.isAdmin && (
+                    <span className="absolute -top-1 -right-1 h-3 w-3 bg-cyan-500 rounded-full border-2 border-white"></span>
+                  )}
                 </div>
-                <span className="font-bold text-slate-800">@{currentUser?.username}</span>
+                <div className="flex flex-col">
+                  <span className="font-bold text-slate-800">@{currentUser?.username}</span>
+                  {currentUser?.isAdmin && <span className="text-[10px] text-cyan-600 font-black uppercase">Administrator</span>}
+                </div>
              </div>
           ) : (
             <Link to="/sign-in" onClick={() => setIsOpen(false)} className="w-full text-center py-4 text-white font-bold rounded-2xl bg-gradient-to-r from-indigo-600 to-purple-500">
