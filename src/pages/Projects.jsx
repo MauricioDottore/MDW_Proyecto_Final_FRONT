@@ -1,108 +1,194 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 
-export default function Products() {
+const DEFAULT_ICONS = {
+  tech: '💻',
+  home: '🏠',
+  fashion: '🧥',
+  luxury: '💎',
+  Todos: '📦'
+};
+
+export default function Projects() {
   const [products, setProducts] = useState([]);
   const [filter, setFilter] = useState('Todos');
   const [loading, setLoading] = useState(true);
+  const [viewMode, setViewMode] = useState('grid'); // 'grid' o 'list'
 
-  // Categorías (Asegúrate de que coincidan con los values de tu CreatePost)
-  const categories = ['Todos', 'tech', 'home', 'fashion', 'luxury'];
+  // 1. Cargar productos desde la API
+  const fetchProducts = async () => {
+    try {
+      setLoading(true);
+      const res = await fetch('/api/post/getposts');
+      const data = await res.json();
+      if (res.ok) {
+        setProducts(data.posts);
+      }
+    } catch (error) {
+      console.log("Error al obtener productos:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  // 2. Función para eliminar un producto
+  const handleDelete = async (postId) => {
+    if (!window.confirm('¿Estás seguro de que quieres eliminar este producto?')) return;
+    try {
+      const res = await fetch(`/api/post/deletepost/${postId}`, {
+        method: 'DELETE',
+      });
+      if (res.ok) {
+        setProducts((prev) => prev.filter((post) => post._id !== postId));
+      } else {
+        const data = await res.json();
+        alert(data.message || "Error al eliminar");
+      }
+    } catch (error) {
+      console.log("Error al eliminar:", error);
+    }
+  };
 
-    useEffect(() => {
-      const fetchProducts = async () => {
-        try {
-          setLoading(true);
-          const res = await fetch('/api/post/getposts');
-          const data = await res.json();
-          
-          if (res.ok) {
-            // CAMBIO AQUÍ: data es { posts: [...] }, por eso usamos data.posts
-            setProducts(data.posts); 
-          }
-        } catch (error) {
-          console.log("Error:", error);
-        } finally {
-          setLoading(false);
-        }
-      };
-      fetchProducts();
-    }, []);
-    
-  // Lógica de filtrado en tiempo real
+  useEffect(() => {
+    fetchProducts();
+  }, []);
+
+  // 3. Lógica de filtrado por categoría
   const filteredProducts = filter === 'Todos' 
     ? products 
     : products.filter(p => p.category === filter);
 
   return (
-    <div className="min-h-screen bg-white">
-      {/* Header ... (se mantiene igual) */}
-      
-      <div className="max-w-7xl mx-auto px-6 py-12 flex flex-col md:flex-row gap-12">
-        {/* Sidebar */}
-        <aside className="w-full md:w-64 space-y-8">
-          <div>
-            <h3 className="text-sm font-bold uppercase tracking-widest text-slate-400 mb-4">Categorías</h3>
-            <div className="flex flex-col gap-2">
-              {categories.map((cat) => (
-                <button
-                  key={cat}
-                  onClick={() => setFilter(cat)}
-                  className={`text-left px-4 py-2 rounded-xl transition-all capitalize ${
-                    filter === cat 
-                    ? 'bg-indigo-600 text-white font-bold shadow-md shadow-indigo-100' 
-                    : 'text-slate-600 hover:bg-slate-100'
-                  }`}
-                >
-                  {cat === 'tech' ? 'Tecnología' : cat === 'home' ? 'Hogar' : cat === 'fashion' ? 'Moda' : cat === 'luxury' ? 'Lujo' : cat}
-                </button>
-              ))}
-            </div>
+    <div className="min-h-screen bg-slate-50/50 pb-20">
+      {/* --- HEADER --- */}
+      <div className="max-w-7xl mx-auto px-6 pt-12 flex justify-between items-end gap-4 flex-wrap">
+        <div>
+          <h1 className="text-3xl font-black text-slate-900 tracking-tight">Gestión de Inventario</h1>
+          <p className="text-slate-500 text-sm font-medium italic">Administra, edita y organiza tus publicaciones</p>
+        </div>
+        
+        {/* Selector de modo de vista */}
+        <div className="flex bg-white p-1.5 rounded-2xl border border-slate-200 shadow-sm">
+          <button 
+            onClick={() => setViewMode('grid')}
+            className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${viewMode === 'grid' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200' : 'text-slate-400 hover:bg-slate-50'}`}
+          >
+            Cuadrícula
+          </button>
+          <button 
+            onClick={() => setViewMode('list')}
+            className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${viewMode === 'list' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200' : 'text-slate-400 hover:bg-slate-50'}`}
+          >
+            Lista
+          </button>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-6 py-8 flex flex-col md:flex-row gap-12">
+        {/* --- SIDEBAR DE FILTROS --- */}
+        <aside className="w-full md:w-64 space-y-4">
+          <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Categorías</h3>
+          <div className="flex flex-col gap-1">
+            {['Todos', 'tech', 'home', 'fashion', 'luxury'].map((cat) => (
+              <button
+                key={cat}
+                onClick={() => setFilter(cat)}
+                className={`text-left px-5 py-3.5 rounded-2xl transition-all text-sm font-bold flex items-center ${filter === cat ? 'bg-indigo-50 text-indigo-700 shadow-sm ring-1 ring-indigo-100' : 'text-slate-500 hover:bg-slate-100'}`}
+              >
+                <span className="mr-3 text-lg leading-none">{DEFAULT_ICONS[cat] || '📦'}</span>
+                <span className="capitalize">{cat === 'tech' ? 'Tecnología' : cat === 'home' ? 'Hogar' : cat === 'fashion' ? 'Moda' : cat === 'luxury' ? 'Lujo' : cat}</span>
+              </button>
+            ))}
           </div>
         </aside>
 
-        {/* Grilla de Productos */}
+        {/* --- CONTENIDO PRINCIPAL --- */}
         <div className="flex-1">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-            {!loading && filteredProducts.length > 0 ? (
-              filteredProducts.map((product) => (
-                <div key={product._id} className="group relative bg-white border border-slate-100 rounded-3xl p-4 hover:shadow-2xl hover:shadow-slate-200 transition-all duration-500">
-                  {/* ... Resto de tu diseño de Card (imagen, nombre, precio) */}
-                  <div className="relative aspect-square overflow-hidden rounded-2xl bg-slate-100 mb-4">
-                    <img 
-                      src={product.image} 
-                      alt={product.name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    />
+          {loading ? (
+            /* Esqueleto de carga */
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+               {[1,2,3,4,5,6].map(n => <div key={n} className="h-72 bg-slate-200 animate-pulse rounded-[2.5rem]" />)}
+            </div>
+          ) : filteredProducts.length === 0 ? (
+            /* Estado vacío */
+            <div className="bg-white rounded-[2.5rem] py-20 text-center border-2 border-dashed border-slate-200 shadow-sm">
+               <span className="text-5xl mb-4 block">🔍</span>
+               <p className="text-slate-400 font-bold">No hay productos en esta categoría.</p>
+            </div>
+          ) : viewMode === 'grid' ? (
+            /* MODO CUADRÍCULA (GRID) */
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+              {filteredProducts.map((product) => (
+                <div key={product._id} className="group relative bg-white rounded-[2.5rem] p-4 border border-slate-100 hover:shadow-2xl hover:shadow-indigo-100/40 transition-all duration-500">
+                  <div className="absolute top-6 right-6 z-10 flex gap-2 opacity-0 group-hover:opacity-100 transition-all transform translate-y-2 group-hover:translate-y-0">
+                    <Link to={`/update-post/${product._id}`} className="p-3 bg-white/90 backdrop-blur rounded-full shadow-xl text-slate-600 hover:text-indigo-600 hover:scale-110 transition-all">✏️</Link>
+                    <button onClick={() => handleDelete(product._id)} className="p-3 bg-white/90 backdrop-blur rounded-full shadow-xl text-slate-600 hover:text-red-600 hover:scale-110 transition-all">🗑️</button>
                   </div>
-                  <div className="space-y-1">
-                    <p className="text-xs font-bold text-indigo-600 uppercase">{product.category}</p>
-                    <h2 className="text-xl font-bold text-slate-800 truncate">{product.name}</h2>
+                  <div className="aspect-square rounded-[2rem] bg-slate-50 flex items-center justify-center mb-6 overflow-hidden border border-slate-50">
+                    {product.image ? (
+                        <img src={product.image} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt={product.name} />
+                    ) : (
+                        <span className="text-7xl drop-shadow-md">{DEFAULT_ICONS[product.category] || '📦'}</span>
+                    )}
+                  </div>
+                  <div className="px-2">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-indigo-400">{product.category}</span>
+                    <h2 className="text-lg font-bold text-slate-800 truncate mb-1">{product.name}</h2>
                     <p className="text-2xl font-black text-slate-900">${product.price}</p>
                   </div>
                 </div>
-              ))
-            ) : !loading && filteredProducts.length === 0 ? (
-              <p className="text-slate-500 text-center col-span-full py-20 font-medium">No hay productos en esta categoría todavía.</p>
-            ) : (
-              // Skeletons de carga
-              [1,2,3,4,5,6].map((i) => (
-                <div key={i} className="animate-pulse bg-slate-50 rounded-3xl h-80 border border-slate-100"></div>
-              ))
-            )}
-          </div>
+              ))}
+            </div>
+          ) : (
+            /* MODO LISTA (TABLA) */
+            <div className="bg-white rounded-[2.5rem] border border-slate-100 overflow-hidden shadow-sm overflow-x-auto">
+              <table className="w-full text-left border-collapse min-w-[800px]">
+                <thead>
+                  <tr className="bg-slate-50/50 border-b border-slate-100 text-[10px] font-black uppercase tracking-widest text-slate-400">
+                    <th className="px-8 py-6">Producto</th>
+                    <th className="px-8 py-6">Precio</th>
+                    <th className="px-8 py-6">Descripción</th>
+                    <th className="px-8 py-6">Publicado</th>
+                    <th className="px-8 py-6 text-center">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-50">
+                  {filteredProducts.map((product) => (
+                    <tr key={product._id} className="hover:bg-indigo-50/30 transition-colors group">
+                      <td className="px-8 py-5">
+                        <div className="flex items-center gap-4">
+                          <div className="w-14 h-14 rounded-2xl bg-slate-50 flex items-center justify-center text-2xl shrink-0 border border-slate-100 shadow-sm overflow-hidden">
+                            {product.image ? <img src={product.image} className="w-full h-full object-cover" alt="" /> : DEFAULT_ICONS[product.category]}
+                          </div>
+                          <div>
+                            <p className="text-sm font-bold text-slate-800 line-clamp-1">{product.name}</p>
+                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter">ID: {product._id.slice(-6)}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-8 py-5 text-lg font-black text-slate-900">${product.price}</td>
+                      <td className="px-8 py-5">
+                        <p className="text-xs text-slate-500 max-w-[200px] line-clamp-2 leading-relaxed">
+                          {product.description || "Sin descripción disponible"}
+                        </p>
+                      </td>
+                      <td className="px-8 py-5 text-[11px] text-slate-400 font-bold uppercase">
+                        {new Date(product.createdAt).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })}
+                      </td>
+                      <td className="px-8 py-5">
+                        <div className="flex justify-center gap-4">
+                           <Link to={`/update-post/${product._id}`} className="p-2 hover:bg-white rounded-xl shadow-sm hover:scale-125 transition-all grayscale hover:grayscale-0">✏️</Link>
+                           <button onClick={() => handleDelete(product._id)} className="p-2 hover:bg-white rounded-xl shadow-sm hover:scale-125 transition-all grayscale hover:grayscale-0">🗑️</button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       </div>
     </div>
   );
 }
-
-// controllers/post.controller.js
-export const getposts = async (req, res, next) => {
-  try {
-    const posts = await Post.find(); // Asegúrate de que Post sea tu modelo
-    res.status(200).json({ posts }); // Aquí lo enviamos envuelto en un objeto
-  } catch (error) {
-    next(error);
-  }
-};
